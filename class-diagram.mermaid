@@ -1,0 +1,198 @@
+%% Smart Home Controller — UML Class Diagram
+%% Render at https://mermaid.live or any Mermaid-compatible viewer.
+%%
+%% Design Patterns Marked:
+%%   «Singleton»     SmartHomeHub (Bill Pugh)
+%%   «Observer»      DeviceObserver / SmartDevice / SmartHomeGUI
+%%   «Factory»       DeviceFactory + DeviceRegistry (Reflection)
+%%   «Strategy»      AutomationStrategy / NightMode / VacationMode
+%%   «Command»       Command / ToggleDevice / RoomToggle / Automation
+
+classDiagram
+    direction TB
+
+    %% ═══════════════════════════════════════════
+    %%  OBSERVER PATTERN
+    %% ═══════════════════════════════════════════
+
+    class DeviceObserver {
+        <<interface>>
+        +onDeviceEvent(DeviceEvent event)
+    }
+
+    class DeviceEvent {
+        <<immutable>>
+        -deviceName : String
+        -deviceType : String
+        -roomName   : String
+        -newState   : boolean
+        -eventType  : Type
+        -timestamp  : LocalDateTime
+        +toLogString() : String
+        +getDeviceIcon() : String
+        +getStateIcon() : String
+    }
+
+    class SmartDevice {
+        <<abstract>>
+        -name : String
+        -room : String
+        -on   : boolean
+        -observers : List~DeviceObserver~
+        +getDeviceType()* : String
+        +toggle()
+        +setState(boolean, Type)
+        +addObserver(DeviceObserver)
+        +removeObserver(DeviceObserver)
+        #notifyObservers(Type)
+    }
+
+    SmartDevice --> "0..*" DeviceObserver : notifies
+    SmartDevice ..> DeviceEvent : creates
+
+    %% ═══════════════════════════════════════════
+    %%  CONCRETE DEVICES
+    %% ═══════════════════════════════════════════
+
+    class Light {
+        +getDeviceType() : String
+    }
+    class Thermostat {
+        +getDeviceType() : String
+    }
+    class DoorLock {
+        +getDeviceType() : String
+    }
+
+    SmartDevice <|-- Light
+    SmartDevice <|-- Thermostat
+    SmartDevice <|-- DoorLock
+
+    %% ═══════════════════════════════════════════
+    %%  FACTORY PATTERN (Reflection-Driven)
+    %% ═══════════════════════════════════════════
+
+    class DeviceFactory {
+        <<utility>>
+        +create(type, name, room)$ : SmartDevice
+        +getAvailableTypes()$ : List~String~
+    }
+
+    class DeviceRegistry {
+        <<singleton>>
+        -registry : Map~String‚ Class~
+        +getInstance()$ : DeviceRegistry
+        +register(typeName, clazz)
+        +createInstance(type, name, room) : SmartDevice
+        +getRegisteredTypes() : List~String~
+    }
+
+    DeviceFactory ..> DeviceRegistry : delegates to
+    DeviceRegistry ..> SmartDevice : reflection creates
+
+    %% ═══════════════════════════════════════════
+    %%  SINGLETON PATTERN (Bill Pugh)
+    %% ═══════════════════════════════════════════
+
+    class SmartHomeHub {
+        <<Singleton — Bill Pugh>>
+        -rooms : Map~String‚ Room~
+        -commandManager : CommandManager
+        -strategies : Map~String‚ AutomationStrategy~
+        +getInstance()$ : SmartHomeHub
+        +addDevice(type, name, room) : SmartDevice
+        +getOrCreateRoom(name) : Room
+        +executeCommand(Command)
+        +runAutomation(AutomationStrategy)
+        +savePreferences()
+        +loadPreferences()
+    }
+
+    class Room {
+        -name : String
+        -devices : List~SmartDevice~
+        +addDevice(SmartDevice)
+        +allOn()
+        +allOff()
+        +hasActiveDevice() : boolean
+    }
+
+    SmartHomeHub o-- "1..*" Room : contains
+    Room o-- "0..*" SmartDevice : contains
+
+    %% ═══════════════════════════════════════════
+    %%  STRATEGY PATTERN
+    %% ═══════════════════════════════════════════
+
+    class AutomationStrategy {
+        <<interface>>
+        +getName() : String
+        +execute(Collection~Room~)
+    }
+
+    class NightModeStrategy {
+        +execute(Collection~Room~)
+    }
+    class VacationModeStrategy {
+        +execute(Collection~Room~)
+    }
+
+    AutomationStrategy <|.. NightModeStrategy
+    AutomationStrategy <|.. VacationModeStrategy
+    SmartHomeHub --> "0..*" AutomationStrategy : uses
+
+    %% ═══════════════════════════════════════════
+    %%  COMMAND PATTERN + MEMENTO
+    %% ═══════════════════════════════════════════
+
+    class Command {
+        <<interface>>
+        +execute()
+        +undo()
+        +getDescription() : String
+    }
+
+    class ToggleDeviceCommand {
+        -device : SmartDevice
+        -previousState : boolean
+    }
+    class RoomToggleCommand {
+        -room : Room
+        -snapshot : Map~SmartDevice‚ Boolean~
+    }
+    class AutomationCommand {
+        -strategy : AutomationStrategy
+        -snapshot : Map~SmartDevice‚ Boolean~
+    }
+
+    Command <|.. ToggleDeviceCommand
+    Command <|.. RoomToggleCommand
+    Command <|.. AutomationCommand
+
+    class CommandManager {
+        -undoStack : Deque~Command~
+        -redoStack : Deque~Command~
+        +execute(Command)
+        +undo() : boolean
+        +redo() : boolean
+    }
+
+    CommandManager o-- "0..*" Command : manages
+    SmartHomeHub --> CommandManager : owns
+
+    %% ═══════════════════════════════════════════
+    %%  GUI (Observer + Presenter)
+    %% ═══════════════════════════════════════════
+
+    class SmartHomeGUI {
+        <<JFrame>>
+        -logArea : JTextArea
+        -deviceButtons : Map
+        -masterSwitches : Map
+        +onDeviceEvent(DeviceEvent)
+        -rebuildRoomPanels()
+        -populateDemoDevices()
+    }
+
+    DeviceObserver <|.. SmartHomeGUI
+    SmartHomeGUI --> SmartHomeHub : uses singleton

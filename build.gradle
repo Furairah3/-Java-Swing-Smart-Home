@@ -1,0 +1,41 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'edu.cs415'
+version = '1.0'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src']
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Optional: Uncomment for a modern flat dark theme.
+    // Then in Main.java replace the Nimbus block with:
+    //   com.formdev.flatlaf.FlatDarkLaf.setup();
+    //
+    // implementation 'com.formdev:flatlaf:3.4'
+}
+
+application {
+    mainClass = 'smarthome.Main'
+}
+
+run {
+    // Enable emoji rendering on some JDKs
+    jvmArgs = ['-Dfile.encoding=UTF-8']
+}
