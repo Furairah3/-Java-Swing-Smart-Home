@@ -29,25 +29,25 @@ See `build.gradle` for FlatLaf dependency (optional modern L&F).
 I used six classic design patterns in this project. Here is what each one does
 and where I put it in the code.
 
-**1. Observer** — I implemented this between `SmartDevice` and `DeviceObserver`.
+**1. Observer**  :I implemented this between `SmartDevice` and `DeviceObserver`.
 Devices push events to anything that's listening, so the GUI updates by itself
 without ever polling.
 
-**2. Factory** — I built this with `DeviceFactory` and `DeviceRegistry`.
+**2. Factory** : I built this with `DeviceFactory` and `DeviceRegistry`.
 It creates devices using reflection, so I never had to write big if/else chains
 to pick which class to instantiate.
 
-**3. Singleton** — I used the Bill Pugh style in `SmartHomeHub`. There is only
+**3. Singleton** : I used the Bill Pugh style in `SmartHomeHub`. There is only
 one hub for the whole app and it's both thread-safe and lazy-loaded.
 
-**4. Strategy** — I made this with the `AutomationStrategy` interface and its
+**4. Strategy** : I made this with the `AutomationStrategy` interface and its
 subclasses. Each automation mode (Night Mode, Vacation Mode) is its own swappable
 algorithm.
 
-**5. Command** — I built this with the `Command` interface and `CommandManager`.
+**5. Command** : built this with the `Command` interface and `CommandManager`.
 Every user action becomes a command object so I can undo and redo it later.
 
-**6. Memento** — I tucked this inside the Command classes. Each command takes a
+**6. Memento**  :I tucked this inside the Command classes. Each command takes a
 snapshot of the device states before changing anything, so undo can put things
 back exactly how they were.
 
@@ -81,29 +81,29 @@ safely reversible (Command/Memento).
 
 All my Java source files live in `src/smarthome/`.
 
-- `Main.java` — the entry point. I set up the Nimbus look and feel here and launch the GUI.
-- `SmartHomeGUI.java` — the main JFrame window. It also implements the Observer interface so it can react to device changes.
-- `SmartHomeHub.java` — the Bill Pugh Singleton that coordinates the whole app.
-- `SmartDevice.java` — the abstract base class that plays the Subject role in the Observer pattern.
-- `Light.java` — a concrete device for light bulbs.
-- `Thermostat.java` — a concrete device for AC units.
-- `DoorLock.java` — a concrete device for door locks.
-- `DeviceEvent.java` — the immutable event object I push through the observer chain.
-- `DeviceObserver.java` — the Observer interface anything can implement to listen to device changes.
-- `Room.java` — groups devices together and provides a master switch.
-- `DeviceFactory.java` — the simple facade I call to make new devices.
-- `DeviceRegistry.java` — the reflection-based registry that holds the device type map.
-- `AutomationStrategy.java` — the Strategy interface for automation modes.
-- `NightModeStrategy.java` — a concrete strategy that turns off lights and locks doors.
-- `VacationModeStrategy.java` — a concrete strategy that turns off thermostats and locks doors.
-- `Command.java` — the Command interface that every undoable action implements.
-- `ToggleDeviceCommand.java` — the command for flipping one single device.
-- `RoomToggleCommand.java` — the command for flipping a whole room at once.
-- `AutomationCommand.java` — the command that wraps an automation strategy so it can be undone.
-- `CommandManager.java` — manages the undo and redo stacks.
+- `Main.java` : the entry point. I set up the Nimbus look and feel here and launch the GUI.
+- `SmartHomeGUI.java` :the main JFrame window. It also implements the Observer interface so it can react to device changes.
+- `SmartHomeHub.java`  : the Bill Pugh Singleton that coordinates the whole app.
+- `SmartDevice.java` : the abstract base class that plays the Subject role in the Observer pattern.
+- `Light.java` :a concrete device for light bulbs.
+- `Thermostat.java`  : a concrete device for AC units.
+- `DoorLock.java`  : a concrete device for door locks.
+- `DeviceEvent.java`  :the immutable event object I push through the observer chain.
+- `DeviceObserver.java`  : the Observer interface anything can implement to listen to device changes.
+- `Room.java`  : groups devices together and provides a master switch.
+- `DeviceFactory.java`  : the simple facade I call to make new devices.
+- `DeviceRegistry.java` : the reflection-based registry that holds the device type map.
+- `AutomationStrategy.java`  : the Strategy interface for automation modes.
+- `NightModeStrategy.java`  : a concrete strategy that turns off lights and locks doors.
+- `VacationModeStrategy.java` : a concrete strategy that turns off thermostats and locks doors.
+- `Command.java`  : the Command interface that every undoable action implements.
+- `ToggleDeviceCommand.java`  : the command for flipping one single device.
+- `RoomToggleCommand.java`  : the command for flipping a whole room at once.
+- `AutomationCommand.java` : the command that wraps an automation strategy so it can be undone.
+- `CommandManager.java` :manages the undo and redo stacks.
 
 I also have a few extra files in the project root:
 
-- `class-diagram code and pdf` — the UML class diagram, viewable at plantuml.
-- `build-and-run.sh` — a one-click script that compiles and launches the app.
-- `build.gradle` — the optional Gradle build file.
+- `class-diagram code and pdf` : the UML class diagram, viewable at plantuml.
+- `build-and-run.sh`  : a one-click script that compiles and launches the app.
+- `build.gradle` :the optional Gradle build file.
