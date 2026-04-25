@@ -1,6 +1,6 @@
-# Smart Home Controller — CS 415 Reference Implementation
+# Smart Home Controller  CS 415 Reference Implementation
 
-## Quick Start (No Build Tool Required)
+## Quick Start 
 
 ```bash
 chmod +x build-and-run.sh
@@ -104,6 +104,6 @@ All my Java source files live in `src/smarthome/`.
 
 I also have a few extra files in the project root:
 
-- `class-diagram.mermaid` — the UML class diagram, viewable at mermaid.live.
+- `class-diagram code and pdf` — the UML class diagram, viewable at plantuml.
 - `build-and-run.sh` — a one-click script that compiles and launches the app.
 - `build.gradle` — the optional Gradle build file.
