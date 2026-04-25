@@ -1,0 +1,297 @@
+@startuml SmartHome_DesignPatterns
+
+' ═══════════════════════════════════════════════════════
+'  Smart Home Controller — CS 415
+'  UML Class Diagram — Design Pattern Focus
+' ═══════════════════════════════════════════════════════
+
+skinparam backgroundColor #FEFEFE
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+skinparam classAttributeFontSize 11
+skinparam classFontStyle bold
+skinparam packageFontSize 14
+skinparam packageFontStyle bold
+skinparam noteFontSize 11
+
+skinparam class {
+    BackgroundColor #FFFFFF
+    BorderColor #555555
+    StereotypeFontColor #1565C0
+    StereotypeFontSize 11
+}
+
+skinparam note {
+    BackgroundColor #FFFDE7
+    BorderColor #FBC02D
+}
+
+' ═══════════════════════════════════════════════════════
+'  PATTERN 1: OBSERVER (Push Model)
+' ═══════════════════════════════════════════════════════
+
+package "OBSERVER PATTERN" #E8F5E9 {
+
+    interface DeviceObserver <<Observer>> #C8E6C9 {
+        + onDeviceEvent(event : DeviceEvent)
+    }
+
+    abstract class SmartDevice <<Subject>> #A5D6A7 {
+        - name : String
+        - room : String
+        - on : boolean
+        - observers : List<DeviceObserver>
+        --
+        + {abstract} getDeviceType() : String
+        + toggle()
+        + setState(on, eventType)
+        + addObserver(o : DeviceObserver)
+        + removeObserver(o : DeviceObserver)
+        # notifyObservers(eventType)
+    }
+
+    class DeviceEvent <<Event Payload>> #C8E6C9 {
+        - deviceName : String
+        - deviceType : String
+        - roomName : String
+        - newState : boolean
+        - timestamp : LocalDateTime
+        --
+        + toLogString() : String
+    }
+
+    class SmartHomeGUI <<Concrete Observer>> #A5D6A7 {
+        - logArea : JTextArea
+        - deviceButtons : Map
+        --
+        + onDeviceEvent(event : DeviceEvent)
+    }
+}
+
+SmartDevice --> "0..*" DeviceObserver : notifies
+SmartDevice ..> DeviceEvent : creates
+DeviceObserver <|.. SmartHomeGUI
+
+note as N1
+  **Observer:** When a device toggles,
+  it pushes a DeviceEvent to all
+  observers. The GUI auto-updates
+  without the device knowing about it.
+end note
+N1 .right. SmartDevice
+
+' ═══════════════════════════════════════════════════════
+'  CONCRETE DEVICES (ConcreteSubjects)
+' ═══════════════════════════════════════════════════════
+
+package "Concrete Devices" #E3F2FD {
+    class Light <<ConcreteSubject>> #BBDEFB {
+        + getDeviceType() : "Light"
+    }
+    class Thermostat <<ConcreteSubject>> #BBDEFB {
+        + getDeviceType() : "Thermostat"
+    }
+    class DoorLock <<ConcreteSubject>> #BBDEFB {
+        + getDeviceType() : "DoorLock"
+    }
+}
+
+SmartDevice <|-- Light
+SmartDevice <|-- Thermostat
+SmartDevice <|-- DoorLock
+
+' ═══════════════════════════════════════════════════════
+'  PATTERN 2: FACTORY (Reflection-Driven)
+' ═══════════════════════════════════════════════════════
+
+package "FACTORY PATTERN" #FFF3E0 {
+
+    class DeviceFactory <<Factory>> #FFE0B2 {
+        + {static} create(type, name, room) : SmartDevice
+        + {static} getAvailableTypes() : List<String>
+    }
+
+    class DeviceRegistry <<Reflection Registry>> #FFE0B2 {
+        - registry : Map<String, Class>
+        --
+        + {static} getInstance() : DeviceRegistry
+        + register(typeName, clazz)
+        + createInstance(type, name, room) : SmartDevice
+    }
+}
+
+DeviceFactory ..> DeviceRegistry : delegates
+DeviceRegistry ..> Light : creates via\nreflection
+DeviceRegistry ..> Thermostat : creates via\nreflection
+DeviceRegistry ..> DoorLock : creates via\nreflection
+
+note as N2
+  **Factory:** GUI calls DeviceFactory.create()
+  instead of new Light(). DeviceRegistry uses
+  Java Reflection — no if/else chains.
+  Adding a new device type requires zero
+  changes to the Factory (Open/Closed Principle).
+end note
+N2 .left. DeviceFactory
+
+' ═══════════════════════════════════════════════════════
+'  PATTERN 3: SINGLETON (Bill Pugh)
+' ═══════════════════════════════════════════════════════
+
+package "SINGLETON PATTERN" #F3E5F5 {
+
+    class SmartHomeHub <<Singleton>> #E1BEE7 {
+        - rooms : Map<String, Room>
+        - commandManager : CommandManager
+        - strategies : Map<String, AutomationStrategy>
+        --
+        - SmartHomeHub()  <<private>>
+        + {static} getInstance() : SmartHomeHub
+        + addDevice(type, name, room) : SmartDevice
+        + executeCommand(cmd : Command)
+        + runAutomation(strategy)
+        + savePreferences()
+        + loadPreferences()
+    }
+
+    class "SmartHomeHub.Holder" as Holder <<Bill Pugh Helper>> #CE93D8 {
+        - {static} INSTANCE : SmartHomeHub
+    }
+
+    class Room #E1BEE7 {
+        - name : String
+        - devices : List<SmartDevice>
+        --
+        + allOn()
+        + allOff()
+        + hasActiveDevice() : boolean
+    }
+}
+
+SmartHomeHub +-- Holder : lazy init
+SmartHomeHub "1" o-- "1..*" Room
+Room "1" o-- "0..*" SmartDevice
+SmartHomeGUI --> SmartHomeHub : getInstance()
+
+note as N3
+  **Singleton (Bill Pugh):** Private constructor.
+  Inner static Holder class is not loaded by
+  JVM until getInstance() is called — gives
+  lazy init with thread safety for free.
+end note
+N3 .right. Holder
+
+' ═══════════════════════════════════════════════════════
+'  PATTERN 4: STRATEGY
+' ═══════════════════════════════════════════════════════
+
+package "STRATEGY PATTERN" #FFEBEE {
+
+    interface AutomationStrategy <<Strategy>> #FFCDD2 {
+        + getName() : String
+        + execute(rooms : Collection<Room>)
+    }
+
+    class NightModeStrategy <<ConcreteStrategy>> #EF9A9A {
+        + execute(rooms)
+        -- behavior --
+        Lights OFF, Doors LOCKED
+    }
+
+    class VacationModeStrategy <<ConcreteStrategy>> #EF9A9A {
+        + execute(rooms)
+        -- behavior --
+        AC OFF, Doors LOCKED
+    }
+}
+
+AutomationStrategy <|.. NightModeStrategy
+AutomationStrategy <|.. VacationModeStrategy
+SmartHomeHub --> "0..*" AutomationStrategy : uses
+
+note as N4
+  **Strategy:** SmartHomeHub calls
+  strategy.execute(rooms) without
+  knowing which mode it is.
+  New modes = new class, no
+  changes to Hub or GUI.
+end note
+N4 .left. AutomationStrategy
+
+' ═══════════════════════════════════════════════════════
+'  PATTERNS 5 & 6: COMMAND + MEMENTO
+' ═══════════════════════════════════════════════════════
+
+package "COMMAND + MEMENTO PATTERNS" #E0F7FA {
+
+    interface Command <<Command>> #B2EBF2 {
+        + execute()
+        + undo()
+        + getDescription() : String
+    }
+
+    class ToggleDeviceCommand <<ConcreteCommand>> #80DEEA {
+        - device : SmartDevice <<Receiver>>
+        - previousState : boolean <<Memento>>
+        --
+        + execute()
+        + undo()
+    }
+
+    class RoomToggleCommand <<ConcreteCommand>> #80DEEA {
+        - room : Room <<Receiver>>
+        - snapshot : Map <<Memento>>
+        --
+        + execute()
+        + undo()
+    }
+
+    class AutomationCommand <<ConcreteCommand>> #80DEEA {
+        - strategy : AutomationStrategy
+        - snapshot : Map <<Memento>>
+        --
+        + execute()
+        + undo()
+    }
+
+    class CommandManager <<Invoker>> #B2EBF2 {
+        - undoStack : Deque<Command>
+        - redoStack : Deque<Command>
+        --
+        + execute(cmd : Command)
+        + undo() : boolean
+        + redo() : boolean
+    }
+}
+
+Command <|.. ToggleDeviceCommand
+Command <|.. RoomToggleCommand
+Command <|.. AutomationCommand
+CommandManager o-- "0..*" Command : manages stacks
+SmartHomeHub --> CommandManager : owns
+
+ToggleDeviceCommand --> SmartDevice : receiver
+RoomToggleCommand --> Room : receiver
+AutomationCommand --> AutomationStrategy : delegates
+
+note as N5
+  **Command:** Every action is an object
+  with execute() and undo(). CommandManager
+  maintains undo/redo stacks.
+  **Memento:** Each command saves device
+  state before executing, enabling rollback.
+end note
+N5 .right. CommandManager
+
+' ═══════════════════════════════════════════════════════
+'  ENTRY POINT
+' ═══════════════════════════════════════════════════════
+
+class Main <<entry point>> #ECEFF1 {
+    + {static} main(args : String[])
+}
+
+Main ..> SmartHomeGUI : launches
+
+@enduml
